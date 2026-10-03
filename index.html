@@ -3,19 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Karaoke Avond Playlists</title>
+  <title>Karaoke Party Pro</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
     :root {
-      --bg-color: #0f0c1b;
-      --card-bg: #1a162b;
-      --card-bg-hover: #25203b;
+      --bg-color: #0b0914;
+      --card-bg: #161224;
+      --card-bg-hover: #211b36;
       --primary: #ff007f;
       --primary-hover: #e00070;
       --secondary: #00f0ff;
+      --accent: #9d00ff;
       --text: #ffffff;
       --text-dim: #a09cb0;
       --border: #2e2848;
+      --success: #00ff88;
     }
 
     * {
@@ -25,7 +27,7 @@
     }
 
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       background-color: var(--bg-color);
       color: var(--text);
       min-height: 100vh;
@@ -34,38 +36,73 @@
     }
 
     header {
-      background: linear-gradient(135deg, #1f1235 0%, #0f0c1b 100%);
-      padding: 20px;
-      text-align: center;
+      background: linear-gradient(135deg, #1f1235 0%, #0b0914 100%);
+      padding: 15px 20px;
       border-bottom: 2px solid var(--primary);
-      box-shadow: 0 4px 20px rgba(255, 0, 127, 0.2);
+      box-shadow: 0 4px 25px rgba(255, 0, 127, 0.25);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
     }
 
     header h1 {
-      font-size: 2.2rem;
+      font-size: 1.8rem;
       color: #fff;
       text-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary);
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 12px;
+      gap: 10px;
+    }
+
+    .mode-switch {
+      display: flex;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px;
+      border-radius: 30px;
+      border: 1px solid var(--border);
+    }
+
+    .mode-btn {
+      padding: 8px 18px;
+      border-radius: 20px;
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mode-btn.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 0 10px rgba(255, 0, 127, 0.5);
     }
 
     .container {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
       padding: 20px;
       width: 100%;
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 25px;
+      grid-template-columns: 1fr 380px;
+      gap: 20px;
       flex: 1;
+      transition: all 0.3s ease;
     }
 
-    @media (min-width: 900px) {
-      .container {
-        grid-template-columns: 1.2fr 0.8fr;
-      }
+    /* Speelmodus CSS Aanpassing */
+    body.play-mode .container {
+      grid-template-columns: 1fr;
+    }
+
+    body.play-mode .manage-only {
+      display: none !important;
     }
 
     .card {
@@ -73,11 +110,11 @@
       border-radius: 12px;
       padding: 20px;
       border: 1px solid var(--border);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
     }
 
     .card h2 {
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       margin-bottom: 15px;
       color: var(--secondary);
       display: flex;
@@ -85,16 +122,21 @@
       gap: 10px;
     }
 
-    /* Player Section */
+    /* Player Area */
+    .player-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
     .player-container {
       position: relative;
-      padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+      padding-bottom: 56.25%; /* 16:9 */
       height: 0;
       overflow: hidden;
-      border-radius: 8px;
+      border-radius: 10px;
       background: #000;
-      box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
-      margin-bottom: 15px;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
     }
 
     .player-container iframe,
@@ -113,67 +155,70 @@
       align-items: center;
       justify-content: center;
       color: var(--text-dim);
-      background: #080610;
+      background: radial-gradient(circle, #1a1530 0%, #080610 100%);
       text-align: center;
       padding: 20px;
     }
 
     .player-placeholder i {
-      font-size: 4rem;
+      font-size: 4.5rem;
       margin-bottom: 15px;
       color: var(--primary);
-      opacity: 0.8;
     }
 
-    .current-song-info {
-      background: rgba(0, 0, 0, 0.3);
-      padding: 12px 15px;
-      border-radius: 6px;
-      margin-bottom: 15px;
-      border-left: 4px solid var(--secondary);
-    }
-
-    .current-song-title {
-      font-weight: bold;
-      font-size: 1.1rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .current-song-artist {
-      color: var(--text-dim);
-      font-size: 0.9rem;
-    }
-
-    .controls {
+    .player-controls-bar {
       display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 12px 18px;
+      border-radius: 8px;
+      border-left: 4px solid var(--secondary);
       flex-wrap: wrap;
       gap: 10px;
-      justify-content: center;
     }
 
-    /* Form Styles */
+    .song-info-active {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .song-info-active .title {
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+
+    .song-info-active .artist {
+      color: var(--text-dim);
+      font-size: 0.88rem;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    /* Form Controls */
     .form-group {
-      margin-bottom: 15px;
+      margin-bottom: 12px;
     }
 
     .form-group label {
       display: block;
-      margin-bottom: 5px;
-      font-size: 0.9rem;
+      margin-bottom: 4px;
+      font-size: 0.85rem;
       color: var(--text-dim);
     }
 
     input[type="text"] {
       width: 100%;
-      padding: 12px;
+      padding: 10px 12px;
       border-radius: 6px;
       border: 1px solid var(--border);
-      background: #100d1d;
+      background: #0d0a17;
       color: #fff;
-      font-size: 1rem;
-      transition: border-color 0.3s;
+      font-size: 0.95rem;
     }
 
     input[type="text"]:focus {
@@ -183,7 +228,7 @@
 
     /* Buttons */
     .btn {
-      padding: 12px 20px;
+      padding: 10px 16px;
       border: none;
       border-radius: 6px;
       font-weight: bold;
@@ -192,254 +237,292 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       transition: all 0.2s;
       color: white;
     }
 
-    .btn-primary {
-      background: var(--primary);
-    }
-    .btn-primary:hover {
-      background: var(--primary-hover);
-      box-shadow: 0 0 10px rgba(255, 0, 127, 0.5);
-    }
+    .btn-primary { background: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); }
 
-    .btn-secondary {
-      background: #2a2444;
-      border: 1px solid var(--border);
-    }
-    .btn-secondary:hover {
-      background: #373059;
-      color: var(--secondary);
-    }
+    .btn-secondary { background: #282142; border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #382f5c; color: var(--secondary); }
 
-    .btn-accent {
-      background: linear-gradient(45deg, var(--primary), #9d00ff);
-    }
-    .btn-accent:hover {
-      opacity: 0.9;
-      box-shadow: 0 0 15px rgba(157, 0, 255, 0.4);
-    }
+    .btn-accent { background: linear-gradient(45deg, var(--primary), var(--accent)); }
+    .btn-accent:hover { opacity: 0.9; }
 
-    .btn-block {
-      width: 100%;
-    }
+    .btn-block { width: 100%; }
+    .btn-icon { padding: 6px 10px; font-size: 0.85rem; }
+    .btn-danger { background: #dc3545; }
+    .btn-danger:hover { background: #bd2130; }
 
-    .btn-icon {
-      padding: 8px 12px;
-      font-size: 0.85rem;
-    }
-
-    .btn-danger {
-      background: #dc3545;
-    }
-    .btn-danger:hover {
-      background: #bd2130;
-    }
-
-    /* Song List */
-    .song-list-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-
-    .song-count {
-      font-size: 0.85rem;
-      background: var(--border);
-      padding: 3px 8px;
-      border-radius: 12px;
-    }
-
+    /* Songs List */
     .song-list {
       list-style: none;
-      max-height: 400px;
+      max-height: 420px;
       overflow-y: auto;
-      padding-right: 5px;
-    }
-
-    .song-list::-webkit-scrollbar {
-      width: 6px;
-    }
-    .song-list::-webkit-scrollbar-track {
-      background: var(--bg-color);
-      border-radius: 3px;
-    }
-    .song-list::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 3px;
     }
 
     .song-item {
-      background: #120e22;
+      background: #110d1f;
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 10px;
+      padding: 10px;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      transition: all 0.2s;
     }
 
-    .song-item:hover {
-      border-color: var(--secondary);
-      background: var(--card-bg-hover);
+    .song-item.played {
+      opacity: 0.5;
     }
 
     .song-item.active {
       border-color: var(--primary);
-      background: rgba(255, 0, 127, 0.1);
+      background: rgba(255, 0, 127, 0.15);
     }
 
-    .song-details {
+    .song-item .details {
       flex: 1;
       min-width: 0;
     }
 
-    .song-title-text {
+    .song-item .title-text {
       font-weight: 600;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      font-size: 0.95rem;
     }
 
-    .song-artist-text {
-      font-size: 0.85rem;
+    .song-item .artist-text {
+      font-size: 0.8rem;
       color: var(--text-dim);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .song-actions {
+    /* Modal / Wheel Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(5px);
+    }
+
+    .modal-overlay.active {
       display: flex;
-      gap: 6px;
     }
 
-    .empty-state {
+    .wheel-modal {
+      background: var(--card-bg);
+      border: 2px solid var(--accent);
+      border-radius: 16px;
+      padding: 25px;
       text-align: center;
-      padding: 30px 10px;
-      color: var(--text-dim);
+      max-width: 450px;
+      width: 90%;
+      box-shadow: 0 0 30px rgba(157, 0, 255, 0.4);
+      position: relative;
     }
 
-    .empty-state i {
-      font-size: 2.5rem;
-      margin-bottom: 10px;
-      opacity: 0.5;
+    .wheel-container {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      margin: 20px auto;
+    }
+
+    canvas#wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 4px solid var(--secondary);
+    }
+
+    .wheel-pointer {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-top: 25px solid var(--primary);
+      z-index: 10;
+    }
+
+    /* Edit Form Modal */
+    .edit-modal {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 400px;
+      width: 90%;
     }
   </style>
 </head>
-<body>
+<body class="manage-mode">
 
   <header>
-    <h1><i class="fa-solid fa-microphone-lines"></i> Karaoke Avond Playlists</h1>
+    <h1><i class="fa-solid fa-microphone-lines"></i> Karaoke Party Pro</h1>
+    <div class="mode-switch">
+      <button class="mode-btn active" id="btn-mode-manage" onclick="setMode('manage')">
+        <i class="fa-solid fa-sliders"></i> Beheermodus
+      </button>
+      <button class="mode-btn" id="btn-mode-play" onclick="setMode('play')">
+        <i class="fa-solid fa-play"></i> Speelmodus
+      </button>
+    </div>
   </header>
 
   <div class="container">
     
-    <!-- Linker Kolom: Speler -->
+    <!-- Linker Kolom: Videospeler -->
     <div class="left-column">
-      <div class="card">
+      <div class="card player-wrapper">
         <h2><i class="fa-solid fa-tv"></i> Karaoke Scherm</h2>
         
-        <div class="player-container">
+        <div class="player-container" id="player-container">
           <div id="player-placeholder" class="player-placeholder">
-            <i class="fa-solid fa-music"></i>
-            <p>Kies een liedje uit de lijst of druk op "Willekeurig Liedje" om te starten!</p>
+            <i class="fa-solid fa-compact-disc fa-spin-slow"></i>
+            <p>Kies een liedje uit de lijst of draai aan het rad om te starten!</p>
           </div>
           <div id="player"></div>
         </div>
 
-        <div class="current-song-info">
-          <div class="current-song-title" id="current-title">Geen nummer geselecteerd</div>
-          <div class="current-song-artist" id="current-artist">Selecteer een nummer om te beginnen</div>
-        </div>
-
-        <div class="controls">
-          <button class="btn btn-accent" onclick="playRandomSong()">
-            <i class="fa-solid fa-shuffle"></i> Willekeurig Liedje
-          </button>
-          <button class="btn btn-secondary" onclick="playNextSong()">
-            <i class="fa-solid fa-forward"></i> Volgende
-          </button>
+        <div class="player-controls-bar">
+          <div class="song-info-active">
+            <div class="title" id="current-title">Geen nummer actief</div>
+            <div class="artist" id="current-artist">Selecteer een nummer</div>
+          </div>
+          <div class="action-buttons">
+            <button class="btn btn-accent" onclick="openWheel()">
+              <i class="fa-solid fa-dharmachakra"></i> Rad van Fortuin
+            </button>
+            <button class="btn btn-secondary" onclick="playNext()">
+              <i class="fa-solid fa-forward"></i> Volgende
+            </button>
+            <button class="btn btn-secondary btn-icon" onclick="toggleFullscreen()" title="Volledig Scherm">
+              <i class="fa-solid fa-expand"></i>
+            </button>
+            <a id="youtube-fallback-btn" class="btn btn-secondary btn-icon" href="#" target="_blank" title="Open direct op YouTube" style="display:none;">
+              <i class="fa-brands fa-youtube"></i>
+            </a>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Rechter Kolom: Toevoegen & Lijst -->
-    <div class="right-column" style="display: flex; flex-direction: column; gap: 25px;">
+    <!-- Rechter Kolom: Beheer (Formulier & Lijst) -->
+    <div class="right-column manage-only" style="display: flex; flex-direction: column; gap: 20px;">
       
-      <!-- Liedje Toevoegen -->
+      <!-- Nummer Toevoegen -->
       <div class="card">
-        <h2><i class="fa-solid fa-plus"></i> Liedje Toevoegen</h2>
-        <form id="add-song-form" onsubmit="handleAddSong(event)">
+        <h2><i class="fa-solid fa-plus"></i> Nummer Toevoegen</h2>
+        <form onsubmit="handleAddSong(event)">
           <div class="form-group">
-            <label for="song-title">Titel / Liedje</label>
-            <input type="text" id="song-title" placeholder="bv. Bohemian Rhapsody (Karaoke)" required>
+            <label>Titel / Liedje</label>
+            <input type="text" id="add-title" placeholder="bv. Angles (Karaoke)" required>
           </div>
           <div class="form-group">
-            <label for="song-artist">Artiest (Optioneel)</label>
-            <input type="text" id="song-artist" placeholder="bv. Queen">
+            <label>Artiest (Optioneel)</label>
+            <input type="text" id="add-artist" placeholder="bv. Tourist LeMC">
           </div>
           <div class="form-group">
-            <label for="youtube-url">YouTube Link / URL</label>
-            <input type="text" id="youtube-url" placeholder="https://www.youtube.com/watch?v=..." required>
+            <label>YouTube Link / URL</label>
+            <input type="text" id="add-url" placeholder="https://www.youtube.com/watch?v=..." required>
           </div>
           <button type="submit" class="btn btn-primary btn-block">
-            <i class="fa-solid fa-floppy-disk"></i> Toevoegen aan Lijst
+            <i class="fa-solid fa-plus"></i> Toevoegen
           </button>
         </form>
       </div>
 
       <!-- Afspeellijst -->
-      <div class="card">
-        <div class="song-list-header">
-          <h2><i class="fa-solid fa-list"></i> Karaoke Lijst</h2>
-          <span class="song-count" id="song-count">0 nummers</span>
+      <div class="card" style="flex:1;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h2><i class="fa-solid fa-list"></i> Afspeellijst</h2>
+          <button class="btn btn-secondary btn-icon" onclick="resetPlayedStatus()" title="Reset gespeelde status">
+            <i class="fa-solid fa-rotate-right"></i> Reset Status
+          </button>
         </div>
-        
-        <ul class="song-list" id="song-list">
-          <!-- Dynamische lijst van nummers -->
-        </ul>
+        <ul class="song-list" id="song-list"></ul>
       </div>
 
     </div>
 
   </div>
 
+  <!-- Spinwiel Modal -->
+  <div class="modal-overlay" id="wheel-modal">
+    <div class="wheel-modal">
+      <h2 style="color:var(--secondary);"><i class="fa-solid fa-dharmachakra"></i> Willekeurig Nummer</h2>
+      <div class="wheel-container">
+        <div class="wheel-pointer"></div>
+        <canvas id="wheel" width="280" height="280"></canvas>
+      </div>
+      <button class="btn btn-accent btn-block" id="spin-btn" onclick="spinWheel()">
+        <i class="fa-solid fa-play"></i> Draai het Rad!
+      </button>
+      <button class="btn btn-secondary btn-block" style="margin-top: 10px;" onclick="closeWheel()">Sluiten</button>
+    </div>
+  </div>
+
+  <!-- Bewerken Modal -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="edit-modal">
+      <h2><i class="fa-solid fa-pen"></i> Nummer Bewerken</h2>
+      <form onsubmit="handleSaveEdit(event)" style="margin-top: 15px;">
+        <input type="hidden" id="edit-id">
+        <div class="form-group">
+          <label>Titel</label>
+          <input type="text" id="edit-title" required>
+        </div>
+        <div class="form-group">
+          <label>Artiest</label>
+          <input type="text" id="edit-artist">
+        </div>
+        <div class="form-group">
+          <label>YouTube Link</label>
+          <input type="text" id="edit-url" required>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+          <button type="submit" class="btn btn-primary btn-block">Opslaan</button>
+          <button type="button" class="btn btn-secondary btn-block" onclick="closeEditModal()">Annuleren</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
-    // Standaard demo nummers als de lijst leeg is
+    // Standaard afspeellijst
     const defaultSongs = [
-      {
-        id: "default_1",
-        title: "Piano Man (Karaoke)",
-        artist: "Billy Joel",
-        youtubeId: "3x9eS3uI0I4"
-      },
-      {
-        id: "default_2",
-        title: "I Want It That Way (Karaoke)",
-        artist: "Backstreet Boys",
-        youtubeId: "L_LUpnjgPso"
-      }
+      { id: "1", title: "Leef (Karaoke)", artist: "André Hazes Jr.", youtubeId: "3x9eS3uI0I4", played: false },
+      { id: "2", title: "I Want It That Way", artist: "Backstreet Boys", youtubeId: "L_LUpnjgPso", played: false }
     ];
 
     let songs = [];
     let currentSongId = null;
+    let isSpinning = false;
 
-    // Laad afspeellijst uit localStorage bij opstarten
+    // App Initialiseren
     function init() {
-      const savedSongs = localStorage.getItem('karaoke_songs');
-      if (savedSongs) {
-        try {
-          songs = JSON.parse(savedSongs);
-        } catch(e) {
-          songs = [...defaultSongs];
-        }
+      const saved = localStorage.getItem('karaoke_pro_songs');
+      if (saved) {
+        try { songs = JSON.parse(saved); } catch(e) { songs = [...defaultSongs]; }
       } else {
         songs = [...defaultSongs];
         saveSongs();
@@ -447,167 +530,272 @@
       renderSongList();
     }
 
-    // Bewaar in localStorage
     function saveSongs() {
-      localStorage.setItem('karaoke_songs', JSON.stringify(songs));
+      localStorage.setItem('karaoke_pro_songs', JSON.stringify(songs));
       renderSongList();
     }
 
-    // Extract YouTube Video ID uit verschillende URL formaten
+    // Modus wisselen (Beheer vs Speel)
+    function setMode(mode) {
+      document.body.classList.remove('manage-mode', 'play-mode');
+      document.body.classList.add(mode + '-mode');
+
+      document.getElementById('btn-mode-manage').classList.toggle('active', mode === 'manage');
+      document.getElementById('btn-mode-play').classList.toggle('active', mode === 'play');
+    }
+
+    // YouTube ID Extractie
     function extractYouTubeId(url) {
       if (!url) return null;
-      
-      // RegEx voor YouTube ID's (ondersteunt short links, gewone links, embeds, shorts)
       const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|\&v=)([^#\&\?]*).*/;
       const match = url.match(regExp);
-
       return (match && match[2].length === 11) ? match[2] : null;
     }
 
-    // Nieuw liedje toevoegen via formulier
+    // Nummer Toevoegen
     function handleAddSong(e) {
       e.preventDefault();
-      
-      const titleInput = document.getElementById('song-title');
-      const artistInput = document.getElementById('song-artist');
-      const urlInput = document.getElementById('youtube-url');
-
-      const title = titleInput.value.trim();
-      const artist = artistInput.value.trim() || "Onbekend";
-      const url = urlInput.value.trim();
+      const title = document.getElementById('add-title').value.trim();
+      const artist = document.getElementById('add-artist').value.trim() || "Onbekend";
+      const url = document.getElementById('add-url').value.trim();
 
       const youtubeId = extractYouTubeId(url);
-
       if (!youtubeId) {
-        alert("Ongeldige YouTube URL. Voer een geldige link in.");
+        alert("Voer een geldige YouTube link in.");
         return;
       }
 
-      const newSong = {
-        id: Date.now().toString(),
-        title: title,
-        artist: artist,
-        youtubeId: youtubeId
-      };
-
-      songs.push(newSong);
+      songs.push({ id: Date.now().toString(), title, artist, youtubeId, played: false });
       saveSongs();
 
-      // Formulier resetten
-      titleInput.value = '';
-      artistInput.value = '';
-      urlInput.value = '';
-
-      // Als het het eerste liedje is, laad het direct
-      if (songs.length === 1) {
-        playSong(newSong.id);
-      }
+      document.getElementById('add-title').value = '';
+      document.getElementById('add-artist').value = '';
+      document.getElementById('add-url').value = '';
     }
 
-    // Verwijder liedje uit de lijst
-    function deleteSong(id, event) {
-      event.stopPropagation();
-      if (confirm("Weet je zeker dat je dit nummer wilt verwijderen?")) {
-        songs = songs.filter(song => song.id !== id);
-        saveSongs();
-        
-        if (currentSongId === id) {
-          currentSongId = null;
-          document.getElementById('player').innerHTML = '';
-          document.getElementById('player-placeholder').style.display = 'flex';
-          document.getElementById('current-title').textContent = 'Geen nummer geselecteerd';
-          document.getElementById('current-artist').textContent = 'Selecteer een nummer om te beginnen';
-        }
-      }
-    }
-
-    // Speel een specifiek liedje af
+    // Nummer Afspelen
     function playSong(id) {
       const song = songs.find(s => s.id === id);
       if (!song) return;
 
       currentSongId = id;
+      song.played = true; // Markeren als gespeeld
+      saveSongs();
 
-      // Update speler UI
       document.getElementById('player-placeholder').style.display = 'none';
       const playerDiv = document.getElementById('player');
       
-      // YouTube Embed Embedden met Autoplay
+      // Gebruik youtube-nocookie om Embed Fout 153 en CORS te vermijden
       playerDiv.innerHTML = `
         <iframe 
-          src="https://www.youtube.com/embed/${song.youtubeId}?autoplay=1&enablejsapi=1" 
-          title="${song.title}" 
+          src="https://www.youtube-nocookie.com/embed/${song.youtubeId}?autoplay=1&rel=0" 
+          title="${escapeHtml(song.title)}" 
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
           allowfullscreen>
         </iframe>
       `;
 
-      // Update tekst van huidig nummer
       document.getElementById('current-title').textContent = song.title;
       document.getElementById('current-artist').textContent = song.artist;
 
-      renderSongList();
+      // Fallback knop direct naar YouTube
+      const ytBtn = document.getElementById('youtube-fallback-btn');
+      ytBtn.href = `https://www.youtube.com/watch?v=${song.youtubeId}`;
+      ytBtn.style.display = 'inline-flex';
     }
 
-    // Speel een willekeurig liedje af (Shuffle)
-    function playRandomSong() {
-      if (songs.length === 0) {
-        alert("Geen liedjes in de lijst! Voeg eerst een nummer toe.");
-        return;
-      }
-
-      // Kies een ander nummer dan het huidige nummer (indien mogelijk)
-      let availableSongs = songs;
-      if (songs.length > 1 && currentSongId) {
-        availableSongs = songs.filter(s => s.id !== currentSongId);
-      }
-
-      const randomIndex = Math.floor(Math.random() * availableSongs.length);
-      playSong(availableSongs[randomIndex].id);
-    }
-
-    // Speel het volgende nummer in de lijst af
-    function playNextSong() {
-      if (songs.length === 0) return;
-
-      if (!currentSongId) {
+    function playNext() {
+      const unplayed = songs.filter(s => !s.played);
+      if (unplayed.length > 0) {
+        playSong(unplayed[0].id);
+      } else if (songs.length > 0) {
         playSong(songs[0].id);
-        return;
       }
-
-      const currentIndex = songs.findIndex(s => s.id === currentSongId);
-      const nextIndex = (currentIndex + 1) % songs.length;
-      playSong(songs[nextIndex].id);
     }
 
-    // Update de weergave van de liedjeslijst
+    function resetPlayedStatus() {
+      songs.forEach(s => s.played = false);
+      saveSongs();
+    }
+
+    function deleteSong(id, event) {
+      event.stopPropagation();
+      if (confirm("Nummer verwijderen?")) {
+        songs = songs.filter(s => s.id !== id);
+        saveSongs();
+      }
+    }
+
+    // Bewerken Modal
+    function openEditModal(id, event) {
+      event.stopPropagation();
+      const song = songs.find(s => s.id === id);
+      if (!song) return;
+
+      document.getElementById('edit-id').value = song.id;
+      document.getElementById('edit-title').value = song.title;
+      document.getElementById('edit-artist').value = song.artist;
+      document.getElementById('edit-url').value = `https://www.youtube.com/watch?v=${song.youtubeId}`;
+
+      document.getElementById('edit-modal').classList.add('active');
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').classList.remove('active');
+    }
+
+    function handleSaveEdit(e) {
+      e.preventDefault();
+      const id = document.getElementById('edit-id').value;
+      const song = songs.find(s => s.id === id);
+
+      if (song) {
+        const url = document.getElementById('edit-url').value;
+        const youtubeId = extractYouTubeId(url);
+        if (!youtubeId) {
+          alert("Ongeldige YouTube URL");
+          return;
+        }
+
+        song.title = document.getElementById('edit-title').value.trim();
+        song.artist = document.getElementById('edit-artist').value.trim() || "Onbekend";
+        song.youtubeId = youtubeId;
+        saveSongs();
+        closeEditModal();
+      }
+    }
+
+    // Spinwiel / Rad van Fortuin
+    let currentAngle = 0;
+
+    function openWheel() {
+      const unplayed = songs.filter(s => !s.played);
+      if (unplayed.length === 0) {
+        if (songs.length === 0) {
+          alert("Geen nummers beschikbaar. Voeg eerst nummers toe!");
+          return;
+        }
+        if (confirm("Alle nummers zijn al een keer gespeeld! Wil je de status resetten en opnieuw draaien?")) {
+          resetPlayedStatus();
+        } else {
+          return;
+        }
+      }
+
+      document.getElementById('wheel-modal').classList.add('active');
+      drawWheel();
+    }
+
+    function closeWheel() {
+      if (isSpinning) return;
+      document.getElementById('wheel-modal').classList.remove('active');
+    }
+
+    function drawWheel() {
+      const canvas = document.getElementById('wheel');
+      const ctx = canvas.getContext('2d');
+      const unplayed = songs.filter(s => !s.played);
+      const numSegments = unplayed.length;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (numSegments === 0) return;
+
+      const arc = (2 * Math.PI) / numSegments;
+      const colors = ['#ff007f', '#00f0ff', '#9d00ff', '#ffbe0b', '#00ff88', '#ff0055'];
+
+      for (let i = 0; i < numSegments; i++) {
+        const angle = currentAngle + i * arc;
+        ctx.beginPath();
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.moveTo(140, 140);
+        ctx.arc(140, 140, 140, angle, angle + arc);
+        ctx.lineTo(140, 140);
+        ctx.fill();
+
+        // Tekst
+        ctx.save();
+        ctx.translate(140, 140);
+        ctx.rotate(angle + arc / 2);
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 12px Segoe UI";
+        ctx.fillText(unplayed[i].title.substring(0, 14), 45, 4);
+        ctx.restore();
+      }
+    }
+
+    function spinWheel() {
+      if (isSpinning) return;
+      const unplayed = songs.filter(s => !s.played);
+      if (unplayed.length === 0) return;
+
+      isSpinning = true;
+      document.getElementById('spin-btn').disabled = true;
+
+      const spinAngle = Math.floor(Math.random() * 360) + 1440; // Ten minste 4 rondjes
+      const duration = 4000;
+      const start = performance.now();
+
+      function animate(time) {
+        const elapsed = time - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+
+        currentAngle = (easeOut * (spinAngle * Math.PI / 180));
+        drawWheel();
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          isSpinning = false;
+          document.getElementById('spin-btn').disabled = false;
+
+          // Bepaal geselecteerd nummer
+          const numSegments = unplayed.length;
+          const arc = (2 * Math.PI) / numSegments;
+          const normalizedAngle = (2 * Math.PI - (currentAngle % (2 * Math.PI))) % (2 * Math.PI);
+          // Correctie voor de pijl die bovenaan staat (3*PI/2)
+          const index = Math.floor(((normalizedAngle + Math.PI / 2) % (2 * Math.PI)) / arc);
+          const selectedSong = unplayed[index % numSegments];
+
+          setTimeout(() => {
+            closeWheel();
+            playSong(selectedSong.id);
+          }, 500);
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    // Fullscreen Toggle
+    function toggleFullscreen() {
+      const container = document.getElementById('player-container');
+      if (!document.fullscreenElement) {
+        if (container.requestFullscreen) container.requestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    }
+
+    // Render Song List UI
     function renderSongList() {
       const listEl = document.getElementById('song-list');
-      const countEl = document.getElementById('song-count');
-
-      countEl.textContent = `${songs.length} ${songs.length === 1 ? 'nummer' : 'nummers'}`;
-
       if (songs.length === 0) {
-        listEl.innerHTML = `
-          <div class="empty-state">
-            <i class="fa-solid fa-music"></i>
-            <p>Nog geen nummers toegevoegd.</p>
-          </div>
-        `;
+        listEl.innerHTML = `<li style="text-align:center; color:var(--text-dim); padding:20px;">Geen nummers aanwezig</li>`;
         return;
       }
 
       listEl.innerHTML = songs.map(song => {
         const isActive = song.id === currentSongId;
         return `
-          <li class="song-item ${isActive ? 'active' : ''}" onclick="playSong('${song.id}')">
-            <div class="song-details">
-              <div class="song-title-text">${escapeHtml(song.title)}</div>
-              <div class="song-artist-text">${escapeHtml(song.artist)}</div>
+          <li class="song-item ${isActive ? 'active' : ''} ${song.played ? 'played' : ''}" onclick="playSong('${song.id}')">
+            <div class="details">
+              <div class="title-text">${escapeHtml(song.title)} ${song.played ? '<i class="fa-solid fa-check" style="color:var(--success); font-size:0.8rem;"></i>' : ''}</div>
+              <div class="artist-text">${escapeHtml(song.artist)}</div>
             </div>
-            <div class="song-actions">
-              <button class="btn btn-secondary btn-icon" title="Afspelen">
-                <i class="fa-solid ${isActive ? 'fa-volume-high' : 'fa-play'}"></i>
+            <div style="display:flex; gap:4px;">
+              <button class="btn btn-secondary btn-icon" onclick="openEditModal('${song.id}', event)" title="Bewerken">
+                <i class="fa-solid fa-pen"></i>
               </button>
               <button class="btn btn-danger btn-icon" onclick="deleteSong('${song.id}', event)" title="Verwijderen">
                 <i class="fa-solid fa-trash"></i>
@@ -618,14 +806,12 @@
       }).join('');
     }
 
-    // Helper functie tegen HTML-injectie
     function escapeHtml(text) {
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
     }
 
-    // Initialiseren bij het laden van de pagina
     window.onload = init;
   </script>
 </body>
