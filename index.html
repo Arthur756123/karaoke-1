@@ -362,13 +362,18 @@
 
       </div>
 
-      <!-- Afspeellijst & Exporteren -->
+      <!-- Afspeellijst & Delen -->
       <div class="card" style="flex:1;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
           <h2><i class="fa-solid fa-list"></i> Afspeellijst</h2>
-          <button class="btn btn-secondary btn-icon" onclick="exportDataFile()" title="Download songs.json bestand voor GitHub">
-            <i class="fa-solid fa-download"></i> Exporteer Bestand
-          </button>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-accent btn-icon" onclick="copyShareUrl()" title="Kopieer Korte Deellink">
+              <i class="fa-solid fa-share-nodes"></i> Deel Lijst
+            </button>
+            <button class="btn btn-secondary btn-icon" onclick="exportDataFile()" title="Download songs.json bestand">
+              <i class="fa-solid fa-download"></i>
+            </button>
+          </div>
         </div>
         <ul class="song-list" id="song-list"></ul>
       </div>
@@ -416,13 +421,11 @@
   </div>
 
   <script>
-    // Jouw YouTube API Sleutel is hier direct in de code ingevuld:
     const YOUTUBE_API_KEY = "AIzaSyBec6UcDMhQUFwyZz3tKphN97NZu-X1NcE";
 
     const defaultSongs = [
       { id: "1", title: "Leef (Karaoke)", artist: "André Hazes Jr.", youtubeId: "3x9eS3uI0I4", played: false },
-      { id: "2", title: "I Want It That Way", artist: "Backstreet Boys", youtubeId: "L_LUpnjgPso", played: false },
-      { id: "3", title: "Piano Man", artist: "Billy Joel", youtubeId: "3x9eS3uI0I4", played: false }
+      { id: "2", title: "I Want It That Way", artist: "Backstreet Boys", youtubeId: "L_LUpnjgPso", played: false }
     ];
 
     let songs = [];
@@ -436,21 +439,86 @@
     ];
 
     async function init() {
-      try {
-        const response = await fetch('songs.json');
-        if (response.ok) {
-          songs = await response.json();
-          renderSongList();
-          return;
-        }
-      } catch(e) {}
-
-      const saved = localStorage.getItem('karaoke_pro_songs');
-      if (saved) {
-        try { songs = JSON.parse(saved); } catch(e) { songs = [...defaultSongs]; }
-      } else {
-        songs = [...defaultSongs];
+      // 1. Laad eerst eventueel opgeslagen nummers van dit apparaat
+      const localData = localStorage.getItem('karaoke_pro_songs');
+      if (localData) {
+        try { songs = JSON.parse(localData); } catch(e) { songs = []; }
       }
+
+      // 2. Probeer songs.json te laden als er lokaal nog niets staat
+      if (songs.length === 0) {
+        try {
+          const res = await fetch('songs.json');
+          if (res.ok) songs = await res.json();
+        } catch(e) {}
+      }
+
+      if (songs.length === 0) songs = [...defaultSongs];
+
+      // 3. Controleer of er nummers in de URL staan (?s=id1,id2)
+      await loadSongsFromUrl();
+
+      saveSongs();
+    }
+
+    // Importeer nummers uit de ultra-korte URL (?s=id1,id2)
+    async function loadSongsFromUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const songIdsParam = urlParams.get('s');
+
+      if (!songIdsParam) return;
+
+      const idsToFetch = songIdsParam.split(',')
+        .map(id => id.trim())
+        .filter(id => id.length === 11 && !songs.some(s => s.youtubeId === id));
+
+      if (idsToFetch.length === 0) return;
+
+      try {
+        const idsString = idsToFetch.join(',');
+        const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${idsString}&key=${YOUTUBE_API_KEY}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.items) {
+          data.items.forEach(item => {
+            songs.push({
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+              title: item.snippet.title.replace(/karaoke/gi, '').trim(),
+              artist: item.snippet.channelTitle,
+              youtubeId: item.id,
+              played: false
+            });
+          });
+          
+          // Schoon de URL op zodat hij weer netjes is
+          window.history.replaceState({}, document.title, window.location.pathname);
+          alert(`${data.items.length} nummer(s) via de link toegevoegd aan je afspeellijst!`);
+        }
+      } catch(e) {
+        console.error("Fout bij ophalen nummers uit URL:", e);
+      }
+    }
+
+    // Genereer en kopieer de ultra-korte deellink
+    function copyShareUrl() {
+      if (songs.length === 0) {
+        alert("Geen nummers in de lijst om te delen.");
+        return;
+      }
+
+      const ids = songs.map(s => s.youtubeId).join(',');
+      const shareUrl = `${window.location.origin}${window.location.pathname}?s=${ids}`;
+
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        alert("Korte deellink gekopieerd naar je klembord! Stuur deze door naar een ander apparaat.");
+      }).catch(() => {
+        prompt("Kopieer deze deellink handmatig:", shareUrl);
+      });
+    }
+
+    function saveSongs() {
+      localStorage.setItem('karaoke_pro_songs', JSON.stringify(songs));
       renderSongList();
     }
 
@@ -480,22 +548,19 @@
           alert("YouTube API Fout: " + data.error.message);
         } else if (data.items && data.items.length > 0) {
           const item = data.items[0];
-          const youtubeId = item.id.videoId;
-          const videoTitle = item.snippet.title;
 
           songs.push({
             id: Date.now().toString(),
-            title: videoTitle.replace(/karaoke/gi, '').trim(),
+            title: item.snippet.title.replace(/karaoke/gi, '').trim(),
             artist: item.snippet.channelTitle,
-            youtubeId: youtubeId,
+            youtubeId: item.id.videoId,
             played: false
           });
 
           saveSongs();
           document.getElementById('search-query').value = '';
-          alert(`Toegevoegd: ${videoTitle}`);
         } else {
-          alert("Geen karaoke video gevonden voor deze zoekopdracht.");
+          alert("Geen karaoke video gevonden.");
         }
       } catch (err) {
         alert("Er ging iets mis tijdens het zoeken.");
@@ -503,11 +568,6 @@
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Zoek & Voeg Toe';
       }
-    }
-
-    function saveSongs() {
-      localStorage.setItem('karaoke_pro_songs', JSON.stringify(songs));
-      renderSongList();
     }
 
     function exportDataFile() {
@@ -518,7 +578,6 @@
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
-      alert("Bestand 'songs.json' gedownload! Upload dit bestand naar GitHub om de afspeellijst bij te werken.");
     }
 
     function setMode(mode) {
