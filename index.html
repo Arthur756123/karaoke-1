@@ -113,7 +113,6 @@
       gap: 10px;
     }
 
-    /* Player Wrapper */
     .player-container {
       position: relative;
       padding-bottom: 56.25%;
@@ -141,7 +140,6 @@
       padding: 20px;
     }
 
-    /* Ronde Cirkel Knop Midden in het Scherm */
     .center-wheel-btn {
       width: 140px;
       height: 140px;
@@ -176,9 +174,7 @@
       box-shadow: 0 0 50px rgba(0, 240, 255, 1);
     }
 
-    .center-wheel-btn i {
-      font-size: 2.2rem;
-    }
+    .center-wheel-btn i { font-size: 2.2rem; }
 
     .player-controls-bar {
       display: flex;
@@ -196,7 +192,6 @@
     .song-info-active .title { font-weight: bold; font-size: 1.2rem; }
     .song-info-active .artist { color: var(--text-dim); font-size: 0.95rem; }
 
-    /* Forms & Inputs */
     .form-group { margin-bottom: 12px; }
     .form-group label { display: block; margin-bottom: 5px; font-size: 0.85rem; color: var(--text-dim); }
     input[type="text"] {
@@ -205,7 +200,6 @@
     }
     input[type="text"]:focus { outline: none; border-color: var(--secondary); }
 
-    /* Buttons */
     .btn {
       padding: 10px 18px; border: none; border-radius: 8px; font-weight: bold;
       cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
@@ -220,8 +214,7 @@
     .btn-icon { padding: 8px 12px; }
     .btn-danger { background: #dc3545; }
 
-    /* Song list */
-    .song-list { list-style: none; max-height: 400px; overflow-y: auto; }
+    .song-list { list-style: none; max-height: 350px; overflow-y: auto; }
     .song-item {
       background: #100b21; border: 1px solid var(--border); border-radius: 8px;
       padding: 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;
@@ -234,7 +227,6 @@
     .song-item .title-text { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .song-item .artist-text { font-size: 0.85rem; color: var(--text-dim); }
 
-    /* Rad van Fortuin Modal */
     .modal-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0, 0, 0, 0.88); display: none; align-items: center; justify-content: center;
@@ -264,6 +256,10 @@
     }
 
     .edit-modal { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 25px; max-width: 450px; width: 90%; }
+    
+    .tab-buttons { display: flex; gap: 10px; margin-bottom: 15px; }
+    .tab-btn { flex: 1; padding: 8px; background: #0c0818; border: 1px solid var(--border); color: var(--text-dim); border-radius: 6px; cursor: pointer; }
+    .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
   </style>
 </head>
 <body class="play-mode">
@@ -289,7 +285,6 @@
         
         <div class="player-container" id="player-container">
           <div id="player-placeholder" class="player-placeholder">
-            <!-- Grote Ronde Knop Midden op het Scherm -->
             <button class="center-wheel-btn" onclick="openAndSpinWheel()">
               <i class="fa-solid fa-dharmachakra"></i>
               <span>Draai Rad</span>
@@ -322,26 +317,49 @@
     <!-- Rechter Kolom: Beheer -->
     <div class="right-column manage-only" style="display: flex; flex-direction: column; gap: 20px;">
       
-      <!-- Nummer Toevoegen -->
+      <!-- Nummer Toevoegen / Zoeken -->
       <div class="card">
         <h2><i class="fa-solid fa-plus"></i> Nummer Toevoegen</h2>
-        <form onsubmit="handleAddSong(event)">
-          <div class="form-group">
-            <label>Titel / Liedje</label>
-            <input type="text" id="add-title" placeholder="bv. Bohemian Rhapsody" required>
-          </div>
-          <div class="form-group">
-            <label>Artiest</label>
-            <input type="text" id="add-artist" placeholder="bv. Queen">
-          </div>
-          <div class="form-group">
-            <label>YouTube Link</label>
-            <input type="text" id="add-url" placeholder="https://www.youtube.com/watch?v=..." required>
-          </div>
-          <button type="submit" class="btn btn-primary btn-block">
-            <i class="fa-solid fa-plus"></i> Toevoegen
-          </button>
-        </form>
+        
+        <div class="tab-buttons">
+          <button class="tab-btn active" id="tab-search-btn" onclick="switchTab('search')">⚡ Snel Zoeken</button>
+          <button class="tab-btn" id="tab-manual-btn" onclick="switchTab('manual')">🔗 YouTube Link</button>
+        </div>
+
+        <!-- Zoek op Naam Tab -->
+        <div id="tab-search">
+          <form onsubmit="handleSearchAndAdd(event)">
+            <div class="form-group">
+              <label>Liedje / Artiest Zoeken</label>
+              <input type="text" id="search-query" placeholder="bv. Queen Bohemian Rhapsody" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" id="search-submit-btn">
+              <i class="fa-solid fa-magnifying-glass"></i> Zoek & Voeg Toe
+            </button>
+          </form>
+        </div>
+
+        <!-- Handmatige Link Tab -->
+        <div id="tab-manual" style="display:none;">
+          <form onsubmit="handleAddSong(event)">
+            <div class="form-group">
+              <label>Titel / Liedje</label>
+              <input type="text" id="add-title" placeholder="bv. Bohemian Rhapsody">
+            </div>
+            <div class="form-group">
+              <label>Artiest</label>
+              <input type="text" id="add-artist" placeholder="bv. Queen">
+            </div>
+            <div class="form-group">
+              <label>YouTube Link</label>
+              <input type="text" id="add-url" placeholder="https://www.youtube.com/watch?v=...">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+              <i class="fa-solid fa-plus"></i> Toevoegen
+            </button>
+          </form>
+        </div>
+
       </div>
 
       <!-- Afspeellijst & Exporteren -->
@@ -359,7 +377,7 @@
 
   </div>
 
-  <!-- Rad van Fortuin Modal -->
+  <!-- Rad Modal -->
   <div class="modal-overlay" id="wheel-modal">
     <div class="wheel-modal">
       <h2 style="color:var(--secondary); font-size: 1.6rem;"><i class="fa-solid fa-dharmachakra"></i> Het Rad Draait...</h2>
@@ -371,7 +389,7 @@
     </div>
   </div>
 
-  <!-- Bewerken Modal -->
+  <!-- Edit Modal -->
   <div class="modal-overlay" id="edit-modal">
     <div class="edit-modal">
       <h2><i class="fa-solid fa-pen"></i> Nummer Bewerken</h2>
@@ -398,7 +416,9 @@
   </div>
 
   <script>
-    // Standaard nummers die direct in het bestand staan
+    // Jouw YouTube API Sleutel is hier direct in de code ingevuld:
+    const YOUTUBE_API_KEY = "AIzaSyBec6UcDMhQUFwyZz3tKphN97NZu-X1NcE";
+
     const defaultSongs = [
       { id: "1", title: "Leef (Karaoke)", artist: "André Hazes Jr.", youtubeId: "3x9eS3uI0I4", played: false },
       { id: "2", title: "I Want It That Way", artist: "Backstreet Boys", youtubeId: "L_LUpnjgPso", played: false },
@@ -416,7 +436,6 @@
     ];
 
     async function init() {
-      // Probeer eerst 'songs.json' (als dat op GitHub staat)
       try {
         const response = await fetch('songs.json');
         if (response.ok) {
@@ -426,7 +445,6 @@
         }
       } catch(e) {}
 
-      // Anders lokaal laden of standaard nummers gebruiken
       const saved = localStorage.getItem('karaoke_pro_songs');
       if (saved) {
         try { songs = JSON.parse(saved); } catch(e) { songs = [...defaultSongs]; }
@@ -436,12 +454,62 @@
       renderSongList();
     }
 
+    function switchTab(tab) {
+      document.getElementById('tab-search').style.display = tab === 'search' ? 'block' : 'none';
+      document.getElementById('tab-manual').style.display = tab === 'manual' ? 'block' : 'none';
+      document.getElementById('tab-search-btn').classList.toggle('active', tab === 'search');
+      document.getElementById('tab-manual-btn').classList.toggle('active', tab === 'manual');
+    }
+
+    async function handleSearchAndAdd(e) {
+      e.preventDefault();
+      const query = document.getElementById('search-query').value.trim();
+
+      const btn = document.getElementById('search-submit-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Zoeken op YouTube...';
+
+      try {
+        const searchQuery = encodeURIComponent(query + ' karaoke');
+        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${searchQuery}&type=video&key=${YOUTUBE_API_KEY}`;
+        
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.error) {
+          alert("YouTube API Fout: " + data.error.message);
+        } else if (data.items && data.items.length > 0) {
+          const item = data.items[0];
+          const youtubeId = item.id.videoId;
+          const videoTitle = item.snippet.title;
+
+          songs.push({
+            id: Date.now().toString(),
+            title: videoTitle.replace(/karaoke/gi, '').trim(),
+            artist: item.snippet.channelTitle,
+            youtubeId: youtubeId,
+            played: false
+          });
+
+          saveSongs();
+          document.getElementById('search-query').value = '';
+          alert(`Toegevoegd: ${videoTitle}`);
+        } else {
+          alert("Geen karaoke video gevonden voor deze zoekopdracht.");
+        }
+      } catch (err) {
+        alert("Er ging iets mis tijdens het zoeken.");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Zoek & Voeg Toe';
+      }
+    }
+
     function saveSongs() {
       localStorage.setItem('karaoke_pro_songs', JSON.stringify(songs));
       renderSongList();
     }
 
-    // Exporteer songs.json om op GitHub naast index.html te zetten
     function exportDataFile() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(songs, null, 2));
       const downloadAnchor = document.createElement('a');
@@ -450,7 +518,7 @@
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
-      alert("Het bestand 'songs.json' is gedownload! Upload dit bestand naar je GitHub repository naast index.html. Dan heeft iedereen direct dezelfde nummers!");
+      alert("Bestand 'songs.json' gedownload! Upload dit bestand naar GitHub om de afspeellijst bij te werken.");
     }
 
     function setMode(mode) {
@@ -514,7 +582,6 @@
       else if (songs.length > 0) playSong(songs[0].id);
     }
 
-    /* Rad Logica */
     function openAndSpinWheel() {
       const unplayed = songs.filter(s => !s.played);
       if (unplayed.length === 0) {
