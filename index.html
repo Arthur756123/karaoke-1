@@ -367,7 +367,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
           <h2><i class="fa-solid fa-list"></i> Afspeellijst</h2>
           <div style="display:flex; gap:6px;">
-            <button class="btn btn-accent btn-icon" onclick="copyShareUrl()" title="Kopieer Korte Deellink">
+            <button class="btn btn-accent btn-icon" onclick="copyShareUrl()" title="Kopieer Deellink">
               <i class="fa-solid fa-share-nodes"></i> Deel Lijst
             </button>
             <button class="btn btn-secondary btn-icon" onclick="exportDataFile()" title="Download songs.json bestand">
@@ -445,7 +445,7 @@
         try { songs = JSON.parse(localData); } catch(e) { songs = []; }
       }
 
-      // 2. Als er lokaal nog niets staat, laad uit songs.json
+      // 2. Als er lokaal nog niets staat, probeer songs.json te laden
       if (songs.length === 0) {
         try {
           const res = await fetch('songs.json');
@@ -455,8 +455,8 @@
 
       if (songs.length === 0) songs = [...defaultSongs];
 
-      // 3. Importeer nummers uit de URL als die gedeeld is (?s=id1,id2)
-      await loadSongsFromUrl();
+      // 3. Importeer afspeellijst uit URL (?list=...) als die er is
+      loadSongsFromUrl();
 
       saveSongs();
     }
@@ -503,59 +503,67 @@
       }
     }
 
-    // Deellink laden vanuit URL ID's via YouTube API
-    async function loadSongsFromUrl() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const songIdsParam = urlParams.get('s');
-
-      if (!songIdsParam) return;
-
-      const idsToFetch = songIdsParam.split(',')
-        .map(id => id.trim())
-        .filter(id => id.length === 11 && !songs.some(s => s.youtubeId === id));
-
-      if (idsToFetch.length === 0) return;
-
-      try {
-        const idsString = idsToFetch.join(',');
-        const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${idsString}&key=${YOUTUBE_API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-
-        if (data.items) {
-          data.items.forEach(item => {
-            songs.push({
-              id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
-              title: item.snippet.title.replace(/karaoke/gi, '').trim(),
-              artist: item.snippet.channelTitle,
-              youtubeId: item.id,
-              played: false
-            });
-          });
-          
-          window.history.replaceState({}, document.title, window.location.pathname);
-          alert(`${data.items.length} nummer(s) via de gedeelde link toegevoegd!`);
-        }
-      } catch(e) {
-        console.error("Fout bij ophalen nummers uit URL:", e);
-      }
-    }
-
-    // Kopieer hele korte deellink
+    // Genereer deellink op basis van Base64 (geen API-sleutel nodig om te openen!)
     function copyShareUrl() {
       if (songs.length === 0) {
         alert("Geen nummers in de lijst om te delen.");
         return;
       }
 
-      const ids = songs.map(s => s.youtubeId).join(',');
-      const shareUrl = `${window.location.origin}${window.location.pathname}?s=${ids}`;
+      try {
+        const jsonString = JSON.stringify(songs.map(s => ({
+          t: s.title,
+          a: s.artist,
+          y: s.youtubeId
+        })));
 
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        alert("Korte deellink gekopieerd! Stuur deze door naar je vrienden.");
-      }).catch(() => {
-        prompt("Kopieer deze deellink handmatig:", shareUrl);
-      });
+        const encoded = btoa(encodeURIComponent(jsonString));
+        const shareUrl = `${window.location.origin}${window.location.pathname}?list=${encoded}`;
+
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          alert("Deellink gekopieerd! Iedereen die deze link opent krijgt jouw complete afspeellijst.");
+        }).catch(() => {
+          prompt("Kopieer deze deellink handmatig:", shareUrl);
+        });
+      } catch(e) {
+        alert("Kon de deellink niet aanmaken.");
+      }
+    }
+
+    // Laad nummers in vanuit de Base64 URL parameter
+    function loadSongsFromUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const encodedData = urlParams.get('list');
+
+      if (!encodedData) return;
+
+      try {
+        const decodedJson = decodeURIComponent(atob(encodedData));
+        const importedSongs = JSON.parse(decodedJson);
+
+        if (Array.isArray(importedSongs) && importedSongs.length > 0) {
+          let addedCount = 0;
+          importedSongs.forEach(item => {
+            if (item.y && !songs.some(s => s.youtubeId === item.y)) {
+              songs.push({
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+                title: item.t || "Naamloos Nummer",
+                artist: item.a || "Onbekend",
+                youtubeId: item.y,
+                played: false
+              });
+              addedCount++;
+            }
+          });
+
+          window.history.replaceState({}, document.title, window.location.pathname);
+          if (addedCount > 0) {
+            alert(`${addedCount} nummer(s) succesvol ingeladen via de gedeelde link!`);
+          }
+        }
+      } catch(e) {
+        console.error("Fout bij inladen van afspeellijst uit link:", e);
+      }
     }
 
     function saveSongs() {
