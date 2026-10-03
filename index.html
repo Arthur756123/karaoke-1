@@ -421,6 +421,8 @@
   </div>
 
   <script>
+    const YOUTUBE_API_KEY = "AIzaSyBec6UcDMhQUFwyZz3tKphN97NZu-X1NcE";
+
     const defaultSongs = [
       { id: "1", title: "Leef (Karaoke)", artist: "André Hazes Jr.", youtubeId: "3x9eS3uI0I4", played: false },
       { id: "2", title: "I Want It That Way", artist: "Backstreet Boys", youtubeId: "L_LUpnjgPso", played: false }
@@ -459,7 +461,7 @@
       saveSongs();
     }
 
-    // Slim zoeken via Invidious (gratis YouTube API zonder limiet of API-sleutel)
+    // Zoeken via de officiële YouTube Data API v3
     async function handleSearchAndAdd(e) {
       e.preventDefault();
       const query = document.getElementById('search-query').value.trim();
@@ -469,18 +471,22 @@
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Zoeken...';
 
       try {
-        const res = await fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(query + ' karaoke')}&filter=videos`);
+        const searchQuery = encodeURIComponent(query + ' karaoke');
+        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${searchQuery}&type=video&key=${YOUTUBE_API_KEY}`;
+        
+        const res = await fetch(url);
         const data = await res.json();
 
-        if (data.items && data.items.length > 0) {
+        if (data.error) {
+          alert("YouTube API Fout: " + data.error.message);
+        } else if (data.items && data.items.length > 0) {
           const item = data.items[0];
-          const videoId = item.url.replace('/watch?v=', '');
 
           songs.push({
             id: Date.now().toString(),
-            title: item.title.replace(/karaoke/gi, '').trim(),
-            artist: item.uploaderName || "Onbekend",
-            youtubeId: videoId,
+            title: item.snippet.title.replace(/karaoke/gi, '').trim(),
+            artist: item.snippet.channelTitle,
+            youtubeId: item.id.videoId,
             played: false
           });
 
@@ -490,17 +496,14 @@
           alert("Geen karaoke video gevonden op deze zoekterm.");
         }
       } catch (err) {
-        // Fallback-methode via noembed
-        try {
-          alert("Koppeling met zoekdienst mislukt. Gebruik het tabblad 'YouTube Link' om de link direct te plakken.");
-        } catch(e) {}
+        alert("Er ging iets mis tijdens het maken van de verbinding met YouTube.");
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Zoek & Voeg Toe';
       }
     }
 
-    // Deellink laden vanuit URL ID's
+    // Deellink laden vanuit URL ID's via YouTube API
     async function loadSongsFromUrl() {
       const urlParams = new URLSearchParams(window.location.search);
       const songIdsParam = urlParams.get('s');
@@ -513,30 +516,29 @@
 
       if (idsToFetch.length === 0) return;
 
-      for (const id of idsToFetch) {
-        try {
-          const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`);
-          const data = await res.json();
-          songs.push({
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
-            title: data.title ? data.title.replace(/karaoke/gi, '').trim() : "Karaoke Song",
-            artist: data.author_name || "Onbekend",
-            youtubeId: id,
-            played: false
-          });
-        } catch(e) {
-          songs.push({
-            id: Date.now().toString(),
-            title: "Gedeeld Nummer (" + id + ")",
-            artist: "YouTube",
-            youtubeId: id,
-            played: false
-          });
-        }
-      }
+      try {
+        const idsString = idsToFetch.join(',');
+        const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${idsString}&key=${YOUTUBE_API_KEY}`;
+        const res = await fetch(url);
+        const data = await res.json();
 
-      window.history.replaceState({}, document.title, window.location.pathname);
-      alert(`${idsToFetch.length} nummer(s) via de gedeelde link toegevoegd!`);
+        if (data.items) {
+          data.items.forEach(item => {
+            songs.push({
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+              title: item.snippet.title.replace(/karaoke/gi, '').trim(),
+              artist: item.snippet.channelTitle,
+              youtubeId: item.id,
+              played: false
+            });
+          });
+          
+          window.history.replaceState({}, document.title, window.location.pathname);
+          alert(`${data.items.length} nummer(s) via de gedeelde link toegevoegd!`);
+        }
+      } catch(e) {
+        console.error("Fout bij ophalen nummers uit URL:", e);
+      }
     }
 
     // Kopieer hele korte deellink
