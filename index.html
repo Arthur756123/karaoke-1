@@ -213,6 +213,7 @@
     .btn-block { width: 100%; }
     .btn-icon { padding: 8px 12px; }
     .btn-danger { background: #dc3545; }
+    .btn-warning { background: #ff9800; color: #000; }
 
     .song-list { list-style: none; max-height: 350px; overflow-y: auto; }
     .song-item {
@@ -255,11 +256,16 @@
       font-size: 1.2rem; font-weight: bold; margin-top: 10px; color: var(--secondary); height: 30px;
     }
 
-    .edit-modal { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 25px; max-width: 450px; width: 90%; }
+    .edit-modal { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 25px; max-width: 480px; width: 90%; }
     
     .tab-buttons { display: flex; gap: 10px; margin-bottom: 15px; }
     .tab-btn { flex: 1; padding: 8px; background: #0c0818; border: 1px solid var(--border); color: var(--text-dim); border-radius: 6px; cursor: pointer; }
     .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .alt-version-item {
+      background: #0c0818; border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+    }
   </style>
 </head>
 <body class="play-mode">
@@ -364,13 +370,16 @@
 
       <!-- Afspeellijst & Delen -->
       <div class="card" style="flex:1;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
           <h2><i class="fa-solid fa-list"></i> Afspeellijst</h2>
           <div style="display:flex; gap:6px;">
-            <button class="btn btn-accent btn-icon" onclick="copyShareUrl()" title="Kopieer Deellink">
-              <i class="fa-solid fa-share-nodes"></i> Deel Lijst
+            <button class="btn btn-warning btn-icon" onclick="resetPlayedStatus()" title="Opnieuw beginnen (Reset geweest)">
+              <i class="fa-solid fa-rotate-left"></i> Reset
             </button>
-            <button class="btn btn-secondary btn-icon" onclick="exportDataFile()" title="Download songs.json bestand">
+            <button class="btn btn-accent btn-icon" onclick="copyShareUrl()" title="Kopieer Deellink">
+              <i class="fa-solid fa-share-nodes"></i> Deel
+            </button>
+            <button class="btn btn-secondary btn-icon" onclick="exportDataFile()" title="Download songs.json">
               <i class="fa-solid fa-download"></i>
             </button>
           </div>
@@ -420,6 +429,22 @@
     </div>
   </div>
 
+  <!-- Alternatieve Versie Modal -->
+  <div class="modal-overlay" id="alt-modal">
+    <div class="edit-modal">
+      <h2><i class="fa-solid fa-rotate"></i> Kies een andere versie</h2>
+      <p style="font-size: 0.85rem; color: var(--text-dim); margin-top: 5px; margin-bottom: 15px;">
+        Kies een van de onderstaande YouTube-resultaten als vervanger:
+      </p>
+      <div id="alt-versions-list">
+        <p><i class="fa-solid fa-spinner fa-spin"></i> Alternatieven zoeken op YouTube...</p>
+      </div>
+      <div style="margin-top: 15px;">
+        <button type="button" class="btn btn-secondary btn-block" onclick="closeAltModal()">Sluiten</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const YOUTUBE_API_KEY = "AIzaSyBec6UcDMhQUFwyZz3tKphN97NZu-X1NcE";
 
@@ -439,13 +464,11 @@
     ];
 
     async function init() {
-      // 1. Laad bewaarde nummers uit LocalStorage (per apparaat)
       const localData = localStorage.getItem('karaoke_pro_songs');
       if (localData) {
         try { songs = JSON.parse(localData); } catch(e) { songs = []; }
       }
 
-      // 2. Als er lokaal nog niets staat, probeer songs.json te laden
       if (songs.length === 0) {
         try {
           const res = await fetch('songs.json');
@@ -455,13 +478,20 @@
 
       if (songs.length === 0) songs = [...defaultSongs];
 
-      // 3. Importeer afspeellijst uit URL (?list=...) als die er is
       loadSongsFromUrl();
-
       saveSongs();
     }
 
-    // Zoeken via de officiële YouTube Data API v3
+    // Reset van alle gespeelde nummers
+    function resetPlayedStatus() {
+      if (confirm("Wil je alle nummers weer als 'niet geweest' markeren om opnieuw te beginnen?")) {
+        songs.forEach(s => s.played = false);
+        saveSongs();
+        alert("Alle nummers zijn gereset! Je kunt weer vanaf 0 beginnen.");
+      }
+    }
+
+    // Zoeken via YouTube API v3
     async function handleSearchAndAdd(e) {
       e.preventDefault();
       const query = document.getElementById('search-query').value.trim();
@@ -496,27 +526,72 @@
           alert("Geen karaoke video gevonden op deze zoekterm.");
         }
       } catch (err) {
-        alert("Er ging iets mis tijdens het maken van de verbinding met YouTube.");
+        alert("Er ging iets mis tijdens de verbinding met YouTube.");
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Zoek & Voeg Toe';
       }
     }
 
-    // Genereer deellink op basis van Base64 (geen API-sleutel nodig om te openen!)
-    function copyShareUrl() {
-      if (songs.length === 0) {
-        alert("Geen nummers in de lijst om te delen.");
-        return;
-      }
+    // Zoek en toon andere YouTube-versies voor een nummer
+    async function openAltVersionModal(id, event) {
+      event.stopPropagation();
+      const song = songs.find(s => s.id === id);
+      if (!song) return;
+
+      const modal = document.getElementById('alt-modal');
+      const listContainer = document.getElementById('alt-versions-list');
+      
+      modal.classList.add('active');
+      listContainer.innerHTML = '<p style="padding: 15px; text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Zoeken naar alternatieve karaoke-versies...</p>';
 
       try {
-        const jsonString = JSON.stringify(songs.map(s => ({
-          t: s.title,
-          a: s.artist,
-          y: s.youtubeId
-        })));
+        const searchQuery = encodeURIComponent(`${song.title} ${song.artist} karaoke`);
+        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=4&q=${searchQuery}&type=video&key=${YOUTUBE_API_KEY}`;
 
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.items && data.items.length > 0) {
+          listContainer.innerHTML = data.items.map(item => `
+            <div class="alt-version-item">
+              <div style="flex:1; padding-right:10px;">
+                <div style="font-size:0.85rem; font-weight:bold; color:#fff;">${escapeHtml(item.snippet.title)}</div>
+                <div style="font-size:0.75rem; color:var(--text-dim);">${escapeHtml(item.snippet.channelTitle)}</div>
+              </div>
+              <button class="btn btn-primary btn-icon" onclick="selectAltVersion('${song.id}', '${item.id.videoId}')">
+                Kies
+              </button>
+            </div>
+          `).join('');
+        } else {
+          listContainer.innerHTML = '<p style="color:var(--text-dim);">Geen alternatieve versies gevonden op YouTube.</p>';
+        }
+      } catch (e) {
+        listContainer.innerHTML = '<p style="color:#ff4444;">Fout bij ophalen alternatieven.</p>';
+      }
+    }
+
+    function selectAltVersion(songId, newYoutubeId) {
+      const song = songs.find(s => s.id === songId);
+      if (song) {
+        song.youtubeId = newYoutubeId;
+        saveSongs();
+        closeAltModal();
+
+        if (currentSongId === songId) {
+          playSong(songId);
+        }
+      }
+    }
+
+    function closeAltModal() { document.getElementById('alt-modal').classList.remove('active'); }
+
+    function copyShareUrl() {
+      if (songs.length === 0) { alert("Geen nummers om te delen."); return; }
+
+      try {
+        const jsonString = JSON.stringify(songs.map(s => ({ t: s.title, a: s.artist, y: s.youtubeId })));
         const encoded = btoa(encodeURIComponent(jsonString));
         const shareUrl = `${window.location.origin}${window.location.pathname}?list=${encoded}`;
 
@@ -530,7 +605,6 @@
       }
     }
 
-    // Laad nummers in vanuit de Base64 URL parameter
     function loadSongsFromUrl() {
       const urlParams = new URLSearchParams(window.location.search);
       const encodedData = urlParams.get('list');
@@ -557,12 +631,10 @@
           });
 
           window.history.replaceState({}, document.title, window.location.pathname);
-          if (addedCount > 0) {
-            alert(`${addedCount} nummer(s) succesvol ingeladen via de gedeelde link!`);
-          }
+          if (addedCount > 0) alert(`${addedCount} nummer(s) succesvol ingeladen via de link!`);
         }
       } catch(e) {
-        console.error("Fout bij inladen van afspeellijst uit link:", e);
+        console.error("Fout bij inladen uit link:", e);
       }
     }
 
@@ -769,8 +841,9 @@
               <div class="artist-text">${escapeHtml(song.artist)}</div>
             </div>
             <div style="display:flex; gap:4px;">
-              <button class="btn btn-secondary btn-icon" onclick="openEditModal('${song.id}', event)"><i class="fa-solid fa-pen"></i></button>
-              <button class="btn btn-danger btn-icon" onclick="deleteSong('${song.id}', event)"><i class="fa-solid fa-trash"></i></button>
+              <button class="btn btn-secondary btn-icon" onclick="openAltVersionModal('${song.id}', event)" title="Kies een andere YouTube-versie"><i class="fa-solid fa-rotate"></i></button>
+              <button class="btn btn-secondary btn-icon" onclick="openEditModal('${song.id}', event)" title="Bewerken"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn btn-danger btn-icon" onclick="deleteSong('${song.id}', event)" title="Verwijderen"><i class="fa-solid fa-trash"></i></button>
             </div>
           </li>
         `;
