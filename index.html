@@ -322,7 +322,7 @@
         <h2><i class="fa-solid fa-plus"></i> Nummer Toevoegen</h2>
         
         <div class="tab-buttons">
-          <button class="tab-btn active" id="tab-search-btn" onclick="switchTab('search')">⚡ Snel Zoeken</button>
+          <button class="tab-btn active" id="tab-search-btn" onclick="switchTab('search')">⚡ Slim Zoeken</button>
           <button class="tab-btn" id="tab-manual-btn" onclick="switchTab('manual')">🔗 YouTube Link</button>
         </div>
 
@@ -330,11 +330,11 @@
         <div id="tab-search">
           <form onsubmit="handleSearchAndAdd(event)">
             <div class="form-group">
-              <label>Liedje / Artiest Zoeken</label>
+              <label>Titel en/of Artiest</label>
               <input type="text" id="search-query" placeholder="bv. Queen Bohemian Rhapsody" required>
             </div>
             <button type="submit" class="btn btn-primary btn-block" id="search-submit-btn">
-              <i class="fa-solid fa-magnifying-glass"></i> Zoek & Voeg Toe
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Zoek & Voeg Toe
             </button>
           </form>
         </div>
@@ -355,7 +355,7 @@
               <input type="text" id="add-url" placeholder="https://www.youtube.com/watch?v=...">
             </div>
             <button type="submit" class="btn btn-primary btn-block">
-              <i class="fa-solid fa-plus"></i> Toevoegen
+              <i class="fa-solid fa-plus"></i> Handmatig Toevoegen
             </button>
           </form>
         </div>
@@ -421,8 +421,6 @@
   </div>
 
   <script>
-    const YOUTUBE_API_KEY = "AIzaSyBec6UcDMhQUFwyZz3tKphN97NZu-X1NcE";
-
     const defaultSongs = [
       { id: "1", title: "Leef (Karaoke)", artist: "André Hazes Jr.", youtubeId: "3x9eS3uI0I4", played: false },
       { id: "2", title: "I Want It That Way", artist: "Backstreet Boys", youtubeId: "L_LUpnjgPso", played: false }
@@ -439,13 +437,13 @@
     ];
 
     async function init() {
-      // 1. Laad eerst eventueel opgeslagen nummers van dit apparaat
+      // 1. Laad bewaarde nummers uit LocalStorage (per apparaat)
       const localData = localStorage.getItem('karaoke_pro_songs');
       if (localData) {
         try { songs = JSON.parse(localData); } catch(e) { songs = []; }
       }
 
-      // 2. Probeer songs.json te laden als er lokaal nog niets staat
+      // 2. Als er lokaal nog niets staat, laad uit songs.json
       if (songs.length === 0) {
         try {
           const res = await fetch('songs.json');
@@ -455,13 +453,54 @@
 
       if (songs.length === 0) songs = [...defaultSongs];
 
-      // 3. Controleer of er nummers in de URL staan (?s=id1,id2)
+      // 3. Importeer nummers uit de URL als die gedeeld is (?s=id1,id2)
       await loadSongsFromUrl();
 
       saveSongs();
     }
 
-    // Importeer nummers uit de ultra-korte URL (?s=id1,id2)
+    // Slim zoeken via Invidious (gratis YouTube API zonder limiet of API-sleutel)
+    async function handleSearchAndAdd(e) {
+      e.preventDefault();
+      const query = document.getElementById('search-query').value.trim();
+      const btn = document.getElementById('search-submit-btn');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Zoeken...';
+
+      try {
+        const res = await fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(query + ' karaoke')}&filter=videos`);
+        const data = await res.json();
+
+        if (data.items && data.items.length > 0) {
+          const item = data.items[0];
+          const videoId = item.url.replace('/watch?v=', '');
+
+          songs.push({
+            id: Date.now().toString(),
+            title: item.title.replace(/karaoke/gi, '').trim(),
+            artist: item.uploaderName || "Onbekend",
+            youtubeId: videoId,
+            played: false
+          });
+
+          saveSongs();
+          document.getElementById('search-query').value = '';
+        } else {
+          alert("Geen karaoke video gevonden op deze zoekterm.");
+        }
+      } catch (err) {
+        // Fallback-methode via noembed
+        try {
+          alert("Koppeling met zoekdienst mislukt. Gebruik het tabblad 'YouTube Link' om de link direct te plakken.");
+        } catch(e) {}
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Zoek & Voeg Toe';
+      }
+    }
+
+    // Deellink laden vanuit URL ID's
     async function loadSongsFromUrl() {
       const urlParams = new URLSearchParams(window.location.search);
       const songIdsParam = urlParams.get('s');
@@ -474,33 +513,33 @@
 
       if (idsToFetch.length === 0) return;
 
-      try {
-        const idsString = idsToFetch.join(',');
-        const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${idsString}&key=${YOUTUBE_API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-
-        if (data.items) {
-          data.items.forEach(item => {
-            songs.push({
-              id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
-              title: item.snippet.title.replace(/karaoke/gi, '').trim(),
-              artist: item.snippet.channelTitle,
-              youtubeId: item.id,
-              played: false
-            });
+      for (const id of idsToFetch) {
+        try {
+          const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`);
+          const data = await res.json();
+          songs.push({
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+            title: data.title ? data.title.replace(/karaoke/gi, '').trim() : "Karaoke Song",
+            artist: data.author_name || "Onbekend",
+            youtubeId: id,
+            played: false
           });
-          
-          // Schoon de URL op zodat hij weer netjes is
-          window.history.replaceState({}, document.title, window.location.pathname);
-          alert(`${data.items.length} nummer(s) via de link toegevoegd aan je afspeellijst!`);
+        } catch(e) {
+          songs.push({
+            id: Date.now().toString(),
+            title: "Gedeeld Nummer (" + id + ")",
+            artist: "YouTube",
+            youtubeId: id,
+            played: false
+          });
         }
-      } catch(e) {
-        console.error("Fout bij ophalen nummers uit URL:", e);
       }
+
+      window.history.replaceState({}, document.title, window.location.pathname);
+      alert(`${idsToFetch.length} nummer(s) via de gedeelde link toegevoegd!`);
     }
 
-    // Genereer en kopieer de ultra-korte deellink
+    // Kopieer hele korte deellink
     function copyShareUrl() {
       if (songs.length === 0) {
         alert("Geen nummers in de lijst om te delen.");
@@ -511,7 +550,7 @@
       const shareUrl = `${window.location.origin}${window.location.pathname}?s=${ids}`;
 
       navigator.clipboard.writeText(shareUrl).then(() => {
-        alert("Korte deellink gekopieerd naar je klembord! Stuur deze door naar een ander apparaat.");
+        alert("Korte deellink gekopieerd! Stuur deze door naar je vrienden.");
       }).catch(() => {
         prompt("Kopieer deze deellink handmatig:", shareUrl);
       });
@@ -527,47 +566,6 @@
       document.getElementById('tab-manual').style.display = tab === 'manual' ? 'block' : 'none';
       document.getElementById('tab-search-btn').classList.toggle('active', tab === 'search');
       document.getElementById('tab-manual-btn').classList.toggle('active', tab === 'manual');
-    }
-
-    async function handleSearchAndAdd(e) {
-      e.preventDefault();
-      const query = document.getElementById('search-query').value.trim();
-
-      const btn = document.getElementById('search-submit-btn');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Zoeken op YouTube...';
-
-      try {
-        const searchQuery = encodeURIComponent(query + ' karaoke');
-        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=${searchQuery}&type=video&key=${YOUTUBE_API_KEY}`;
-        
-        const res = await fetch(url);
-        const data = await res.json();
-
-        if (data.error) {
-          alert("YouTube API Fout: " + data.error.message);
-        } else if (data.items && data.items.length > 0) {
-          const item = data.items[0];
-
-          songs.push({
-            id: Date.now().toString(),
-            title: item.snippet.title.replace(/karaoke/gi, '').trim(),
-            artist: item.snippet.channelTitle,
-            youtubeId: item.id.videoId,
-            played: false
-          });
-
-          saveSongs();
-          document.getElementById('search-query').value = '';
-        } else {
-          alert("Geen karaoke video gevonden.");
-        }
-      } catch (err) {
-        alert("Er ging iets mis tijdens het zoeken.");
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Zoek & Voeg Toe';
-      }
     }
 
     function exportDataFile() {
@@ -603,7 +601,7 @@
 
       if (!youtubeId) { alert("Voer een geldige YouTube link in."); return; }
 
-      songs.push({ id: Date.now().toString(), title, artist, youtubeId, played: false });
+      songs.push({ id: Date.now().toString(), title: title || "Naamloos Nummer", artist, youtubeId, played: false });
       saveSongs();
 
       document.getElementById('add-title').value = '';
